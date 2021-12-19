@@ -32,6 +32,7 @@ const db = mysql.createConnection(
     console.log(`Connected to the employee_db database.`)
 );
 
+// Prompt when connection is created
 db.connect(err => {
     if (err) console.error(err);
     firstPrompt();
@@ -65,7 +66,7 @@ function firstPrompt() {
                     addRole();
                     break;
                 case "Add an employee":
-                    // addEmployee();
+                    addEmployee();
                     break;
                 case "Update an employee role":
                     // updateEmployee();
@@ -77,6 +78,52 @@ function firstPrompt() {
         })
 }
 
+// Display list from database functions
+var employeeList = [];
+function selectEmployee() {
+    db.query("SELECT first_name, last_name FROM employees", function (err, results) {
+        if (err) console.error(err);
+
+        employeeList.push("None");
+
+        for (var i = 0; i < results.length; i++) {
+            employeeList.push(results[i].first_name + " " + results[i].last_name);
+        }
+
+        employeeList.push(new inquirer.Separator());
+    })
+    return employeeList;
+}
+
+var roleList = [];
+function selectRole() {
+    db.query("SELECT title FROM roles", function (err, results) {
+        if (err) console.error(err);
+
+        for (var i = 0; i < results.length; i++) {
+            roleList.push(results[i].title);
+        }
+
+        roleList.push(new inquirer.Separator());
+    })
+    return roleList;
+}
+
+var departmentList = [];
+function selectDepartment() {
+    db.query("SELECT name FROM department", function (err, results) {
+        if (err) console.error(err);
+
+        for (var i = 0; i < results.length; i++) {
+            departmentList.push(results[i].name);
+        }
+
+        departmentList.push(new inquirer.Separator());
+    })
+    return departmentList;
+}
+
+// Show all from database
 function showAllDepartments() {
     db.query("SELECT * FROM department", (err, results) => {
         if (err) console.error(err);
@@ -101,6 +148,7 @@ function showAllEmployees() {
     });
 }
 
+// Add into database
 function addDepartment() {
     inquirer
         .prompt([
@@ -117,6 +165,7 @@ function addDepartment() {
                 if (err) console.error(err);
 
                 showAllDepartments();
+                console.log(`-Added ${newDept} to the database-`)
             });
         });
 }
@@ -135,47 +184,30 @@ function addRole() {
                 name: "salary"
             },
             {
-                type: "input",
+                type: "list",
                 message: "Which department does this role belong to?",
-                name: "role_department"
+                name: "role_department",
+                choices: selectDepartment()
             },
         ])
         .then(data => {
             db.query("SELECT id FROM department WHERE name = ?", data.role_department, (err, results) => {
                 if (err) console.error(err);
 
-
                 const [{ id }] = results;
-                console.log("id", id)
 
                 const roleInput = [data.role_name, data.salary, id];
-                console.log(roleInput)
 
                 db.query("INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)", roleInput, (err, results) => {
                     if (err) console.error(err);
 
                     showAllRoles();
+                    console.log(`-Added ${data.role_name} to the database-`)
                 });
 
             });
 
         });
-}
-
-var managersList = [];
-function selectManager() {
-    db.query("SELECT first_name, last_name FROM employees", function (err, results) {
-        if (err) console.error(err);
-
-        managersList.push("None");
-
-        for (var i = 0; i < results.length; i++) {
-            managersList.push(results[i].first_name + " " + results[i].last_name);
-        }
-
-        managersList.push(new inquirer.Separator());
-    })
-    return managersList;
 }
 
 function addEmployee() {
@@ -192,15 +224,16 @@ function addEmployee() {
                 name: "last_name"
             },
             {
-                type: "input",
+                type: "list",
                 message: "What is the employee's role?",
-                name: "emp_role"
+                name: "emp_role",
+                choices: selectRole()
             },
             {
                 type: "list",
-                message: "Who is the employees manager?",
+                message: "Who is the employee's manager?",
                 name: "emp_manager",
-                choices: selectManager()
+                choices: selectEmployee()
             },
 
         ])
@@ -216,14 +249,14 @@ function addEmployee() {
                 // If statement for "None"
                 if (data.emp_manager === "None") {
                     let empManager = null
-                    console.log(empManager)
+
                     newEmployee.push(empManager)
-                    console.log(newEmployee)
 
                     db.query("INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", newEmployee, (err, results) => {
                         if (err) console.error(err);
 
                         showAllEmployees();
+                        console.log(`-Added ${data.first_name + " " + data.last_name} to the database-`)
                     });
                 } else {
                     const managerId = data.emp_manager.split(' ')
@@ -240,6 +273,7 @@ function addEmployee() {
                             if (err) console.error(err);
 
                             showAllEmployees();
+                            console.log(`-Added ${data.first_name + " " + data.last_name} to the database-`)
                         });
                     });
                 }
