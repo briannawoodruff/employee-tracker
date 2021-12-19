@@ -59,10 +59,10 @@ function firstPrompt() {
                     showAllEmployees();
                     break;
                 case "Add a department":
-                    // addDepartment();
+                    addDepartment();
                     break;
                 case "Add a role":
-                    // addRole();
+                    addRole();
                     break;
                 case "Add an employee":
                     // addEmployee();
@@ -99,4 +99,65 @@ function showAllEmployees() {
         console.table(results);
         firstPrompt();
     });
+}
+
+function addDepartment() {
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What is the name of the department?",
+                name: "department_name"
+            },
+        ])
+        .then(data => {
+            const newDept = data.department_name;
+
+            db.query("INSERT INTO department (name) VALUES (?)", newDept, (err, results) => {
+                if (err) console.error(err);
+
+                showAllDepartments();
+            });
+        });
+}
+
+function addRole() {
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What is the name of the role?",
+                name: "role_name"
+            },
+            {
+                type: "number",
+                message: "What is the salary of the role?",
+                name: "salary"
+            },
+            {
+                type: "input",
+                message: "Which department does this role belong to?",
+                name: "role_department"
+            },
+        ])
+        .then(data => {
+            db.query("SELECT id FROM department WHERE name = ?", data.role_department, (err, results) => {
+                if (err) console.error(err);
+
+
+                const [{ id }] = results;
+                console.log("id", id)
+
+                const roleInput = [data.role_name, data.salary, id];
+                console.log(roleInput)
+
+                db.query("INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)", roleInput, (err, results) => {
+                    if (err) console.error(err);
+
+                    showAllRoles();
+                });
+
+            });
+
+        });
 }
