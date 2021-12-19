@@ -4,7 +4,7 @@ VALUES ("Accounting"),
        ("Human Resources"),
        ("IT"),
        ("Operations");
-
+ 
 
 INSERT INTO roles (title, salary, department_id)
 VALUES ("Software Engineer", 100000, 4),
