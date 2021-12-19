@@ -161,3 +161,89 @@ function addRole() {
 
         });
 }
+
+var managersList = [];
+function selectManager() {
+    db.query("SELECT first_name, last_name FROM employees", function (err, results) {
+        if (err) console.error(err);
+
+        managersList.push("None");
+
+        for (var i = 0; i < results.length; i++) {
+            managersList.push(results[i].first_name + " " + results[i].last_name);
+        }
+
+        managersList.push(new inquirer.Separator());
+    })
+    return managersList;
+}
+
+function addEmployee() {
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What is the employee's first name?",
+                name: "first_name"
+            },
+            {
+                type: "input",
+                message: "What is the employee's last name?",
+                name: "last_name"
+            },
+            {
+                type: "input",
+                message: "What is the employee's role?",
+                name: "emp_role"
+            },
+            {
+                type: "list",
+                message: "Who is the employees manager?",
+                name: "emp_manager",
+                choices: selectManager()
+            },
+
+        ])
+        .then(data => {
+            db.query("SELECT id FROM roles WHERE title = ?", data.emp_role, (err, results) => {
+                if (err) console.error(err);
+
+                const [{ id }] = results;
+
+                const newEmployee = [data.first_name, data.last_name];
+                newEmployee.push(id)
+
+                // If statement for "None"
+                if (data.emp_manager === "None") {
+                    let empManager = null
+                    console.log(empManager)
+                    newEmployee.push(empManager)
+                    console.log(newEmployee)
+
+                    db.query("INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", newEmployee, (err, results) => {
+                        if (err) console.error(err);
+
+                        showAllEmployees();
+                    });
+                } else {
+                    const managerId = data.emp_manager.split(' ')
+                    const removeLastName = managerId.pop()
+
+                    db.query("SELECT id FROM employees WHERE first_name = ?", managerId, (err, results) => {
+                        if (err) console.error(err);
+
+                        const [{ id }] = results;
+
+                        newEmployee.push(id)
+
+                        db.query("INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", newEmployee, (err, results) => {
+                            if (err) console.error(err);
+
+                            showAllEmployees();
+                        });
+                    });
+                }
+            });
+
+        });
+}
