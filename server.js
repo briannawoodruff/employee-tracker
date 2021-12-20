@@ -45,7 +45,7 @@ function firstPrompt() {
                 type: 'list',
                 name: 'options',
                 message: "What would you like to do?",
-                choices: ["View all departments", "View all roles", "View all employees", "Add a department", "Add a role", "Add an employee", "Update an employee role", "Quit", new inquirer.Separator()]
+                choices: ["View all departments", "View all roles", "View all employees", "Add a department", "Add a role", "Add an employee", "Update an employee", "Quit", new inquirer.Separator()]
             }
         ])
         .then(data => {
@@ -68,8 +68,8 @@ function firstPrompt() {
                 case "Add an employee":
                     addEmployee();
                     break;
-                case "Update an employee role":
-                    // updateEmployee();
+                case "Update an employee":
+                    updateEmployee();
                     break;
                 case "Quit":
                     db.end()
@@ -84,8 +84,6 @@ function selectEmployee() {
     db.query("SELECT first_name, last_name FROM employees", function (err, results) {
         if (err) console.error(err);
 
-        employeeList.push("None");
-
         for (var i = 0; i < results.length; i++) {
             employeeList.push(results[i].first_name + " " + results[i].last_name);
         }
@@ -93,6 +91,22 @@ function selectEmployee() {
         employeeList.push(new inquirer.Separator());
     })
     return employeeList;
+}
+
+var managerList = [];
+function selectManager() {
+    db.query("SELECT first_name, last_name FROM employees", function (err, results) {
+        if (err) console.error(err);
+
+        managerList.push("None");
+
+        for (var i = 0; i < results.length; i++) {
+            managerList.push(results[i].first_name + " " + results[i].last_name);
+        }
+
+        managerList.push(new inquirer.Separator());
+    })
+    return managerList;
 }
 
 var roleList = [];
@@ -233,7 +247,7 @@ function addEmployee() {
                 type: "list",
                 message: "Who is the employee's manager?",
                 name: "emp_manager",
-                choices: selectEmployee()
+                choices: selectManager()
             },
 
         ])
@@ -259,10 +273,9 @@ function addEmployee() {
                         console.log(`-Added ${data.first_name + " " + data.last_name} to the database-`)
                     });
                 } else {
-                    const managerId = data.emp_manager.split(' ')
-                    const removeLastName = managerId.pop()
+                    const manager = data.emp_manager.split(' ')
 
-                    db.query("SELECT id FROM employees WHERE first_name = ?", managerId, (err, results) => {
+                    db.query("SELECT id FROM employees WHERE first_name = ? and last_name = ?", manager, (err, results) => {
                         if (err) console.error(err);
 
                         const [{ id }] = results;
@@ -279,5 +292,68 @@ function addEmployee() {
                 }
             });
 
+        });
+}
+
+// Update an employee
+function updateEmployee() {
+    inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "What would you like to update?",
+                name: "option",
+                choices: ["Employee's role"]
+            },
+            {
+                type: "list",
+                message: "Which employee's role do you want to update?",
+                name: "emp_name",
+                choices: selectEmployee()
+            },
+            {
+                type: "list",
+                message: "Which role do you want to assign the selected employee?",
+                name: "emp_newRole",
+                choices: selectRole()
+            },
+        ])
+        .then(data => {
+            switch (data.option) {
+                case "Employee's role":
+                    updateRole();
+                    break;
+                // case "Employee's manager":
+                //     updateManager();
+                //     break;
+            }
+
+            function updateRole() {
+                db.query("SELECT id FROM roles WHERE title = ?", data.emp_newRole, (err, results) => {
+                    if (err) console.error(err);
+
+                    const [{ id }] = results;
+
+                    const updateEmployee = [];
+                    updateEmployee.push(id)
+
+                    const employee = data.emp_name.split(' ');
+
+                    db.query("SELECT id FROM employees WHERE first_name = ? and last_name = ?", employee, (err, results) => {
+                        if (err) console.error(err);
+
+                        const [{ id }] = results;
+
+                        updateEmployee.push(id)
+
+                        db.query("UPDATE employees SET role_id = ? WHERE id = ? ", updateEmployee, (err, results) => {
+                            if (err) console.error(err);
+
+                            showAllEmployees();
+                            console.log(`-Updated ${data.emp_name + "'s role to " + data.emp_newRole} in the database-`)
+                        });
+                    });
+                });
+            }
         });
 }
