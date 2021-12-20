@@ -3,6 +3,7 @@ const mysql = require('mysql2');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 
+// asciiart logo
 const logo = require('asciiart-logo');
 const res = require('express/lib/response');
 console.log(
@@ -84,7 +85,9 @@ function selectEmployee() {
     db.query("SELECT first_name, last_name FROM employees", function (err, results) {
         if (err) console.error(err);
 
+        // loop through table
         for (var i = 0; i < results.length; i++) {
+            // push the first_name and last_name into an array to be displayed
             employeeList.push(results[i].first_name + " " + results[i].last_name);
         }
 
@@ -205,6 +208,7 @@ function addRole() {
             },
         ])
         .then(data => {
+            // find the id from the selected department to create an arrary with the inputed data and id of that department
             db.query("SELECT id FROM department WHERE name = ?", data.role_department, (err, results) => {
                 if (err) console.error(err);
 
@@ -252,6 +256,7 @@ function addEmployee() {
 
         ])
         .then(data => {
+            // get id from the selected role for the employee to push into an array
             db.query("SELECT id FROM roles WHERE title = ?", data.emp_role, (err, results) => {
                 if (err) console.error(err);
 
@@ -275,6 +280,7 @@ function addEmployee() {
                 } else {
                     const manager = data.emp_manager.split(' ')
 
+                    // get id from the specific manager selected to be pushed into array for query
                     db.query("SELECT id FROM employees WHERE first_name = ? and last_name = ?", manager, (err, results) => {
                         if (err) console.error(err);
 
@@ -329,6 +335,7 @@ function updateEmployee() {
             }
 
             function updateRole() {
+                // get id from the new role to be assigned to an employee
                 db.query("SELECT id FROM roles WHERE title = ?", data.emp_newRole, (err, results) => {
                     if (err) console.error(err);
 
@@ -339,6 +346,7 @@ function updateEmployee() {
 
                     const employee = data.emp_name.split(' ');
 
+                    // select the id from the choosen employee
                     db.query("SELECT id FROM employees WHERE first_name = ? and last_name = ?", employee, (err, results) => {
                         if (err) console.error(err);
 
@@ -346,7 +354,7 @@ function updateEmployee() {
 
                         updateEmployee.push(id)
 
-                        db.query("UPDATE employees SET role_id = ? WHERE id = ? ", updateEmployee, (err, results) => {
+                        db.query("UPDATE employees SET role_id = ? WHERE id = ?", updateEmployee, (err, results) => {
                             if (err) console.error(err);
 
                             showAllEmployees();
